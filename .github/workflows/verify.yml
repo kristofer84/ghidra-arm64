@@ -23,5 +23,8 @@ on:
 jobs:
   verify:
     uses: ./.github/workflows/_build.yml
+    # Nothing is published here, so contents:read is the whole grant.
+    permissions:
+      contents: read
     with:
       publish: false

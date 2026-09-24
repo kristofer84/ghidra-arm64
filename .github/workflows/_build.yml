@@ -27,9 +27,9 @@ jobs:
     # arm64 natively: the artifact *is* an arm64 decompiler, and building it under qemu
     # on an x86 runner is an order of magnitude slower. Free for public repositories.
     runs-on: ubuntu-24.04-arm
-    permissions:
-      contents: read
-      packages: write
+    # No permissions block on purpose: a called workflow that requests more than its
+    # caller grants fails at startup with no log, which is exactly what happened here.
+    # The callers declare what they need.
     steps:
       - uses: actions/checkout@v5
 
