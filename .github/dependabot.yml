@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Keeps actions/checkout and friends current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "ci"
+
+  # The eclipse-temurin base image in Dockerfile. Note that the debian container used to
+  # compile the decompiler is named in build.sh, not in a Dockerfile, so Dependabot does
+  # not see it -- bump it by hand if that matters.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "docker"

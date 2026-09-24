@@ -1,0 +1,27 @@
+name: verify
+
+# Recipe changes are built and checked, but never published: images are released by tag,
+# so a README edit costs nothing.
+on:
+  push:
+    branches: [main]
+    paths:
+      - build.sh
+      - Dockerfile
+      - Dockerfile.natives
+      - '*.java'
+      - .github/workflows/**
+  pull_request:
+    paths:
+      - build.sh
+      - Dockerfile
+      - Dockerfile.natives
+      - '*.java'
+      - .github/workflows/**
+  workflow_dispatch:
+
+jobs:
+  verify:
+    uses: ./.github/workflows/_build.yml
+    with:
+      publish: false

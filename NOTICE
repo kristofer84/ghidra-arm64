@@ -1,0 +1,17 @@
+ghidra-arm64
+Copyright 2026 Kristofer Nilsson
+
+This repository builds, and its published images contain and redistribute, Ghidra:
+
+    Ghidra: https://github.com/NationalSecurityAgency/ghidra
+    Copyright National Security Agency and contributors.
+    Licensed under the Apache License, Version 2.0.
+
+Ghidra is not modified. Its LICENSE and licenses/ directory are carried unmodified inside
+every published image at /opt/ghidra/; the only file added is a decompiler binary built from
+the source tag matching the release, at
+Ghidra/Features/Decompiler/os/linux_arm_64/decompile, a path the release zip leaves empty.
+
+The published image is built on eclipse-temurin (GPLv2 with the Classpath Exception), which
+carries its own licence text inside the image. The Debian container used to compile the
+decompiler is a build-time dependency only and is not part of any published image.

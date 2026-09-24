@@ -1,14 +1,20 @@
-name: build
+name: build image
 
+# Shared by release.yml (tag -> publishes) and verify.yml (recipe changes -> does not).
+# The build and the check live here and only here, so the two callers cannot drift.
 on:
-  push:
-    tags: ['v*']
-  workflow_dispatch:
+  workflow_call:
     inputs:
       ghidra_ver:
-        description: Ghidra release to build, e.g. 12.1.3
-        required: true
-        default: '12.1.3'
+        description: Ghidra release to build; empty falls back to build.sh's default
+        type: string
+        required: false
+        default: ''
+      publish:
+        description: Push the built image to GHCR
+        type: boolean
+        required: false
+        default: false
 
 # IMAGE_NAME, not IMAGE: build.sh reads IMAGE as its output-tag override, and a
 # workflow-level env of that name silently wins over the default (it did).
@@ -30,19 +36,22 @@ jobs:
       - name: Resolve version
         id: ver
         run: |
-          if [ -n "${{ inputs.ghidra_ver }}" ]; then
-            ver="${{ inputs.ghidra_ver }}"
-          else
+          set -euo pipefail
+          ver="${{ inputs.ghidra_ver }}"
+          # A tag push names the version. A branch push or a PR does not, and there
+          # build.sh's default is the right answer.
+          if [ -z "$ver" ] && [[ "${GITHUB_REF_NAME}" == v[0-9]* ]]; then
             ver="${GITHUB_REF_NAME#v}"
           fi
-          echo "building Ghidra $ver"
+          echo "ghidra=${ver:-<build.sh default>} publish=${{ inputs.publish }} ref=${GITHUB_REF_NAME}"
           echo "ver=$ver" >> "$GITHUB_OUTPUT"
 
+      # An empty GHIDRA_VER falls through to build.sh's own default, via ${VAR:-default}.
       - name: Build
         run: GHIDRA_VER="${{ steps.ver.outputs.ver }}" IMAGE=ghidra:arm64 ./build.sh
 
       # The reason this image exists is that decompiles fail on arm64, so verify that a
-      # real one does not. /bin/true is a small aarch64 ELF, 239 functions.
+      # real one does not. /bin/true is a small aarch64 ELF with 239 functions.
       - name: Verify a decompile actually succeeds
         run: |
           set -eux
@@ -57,9 +66,11 @@ jobs:
           test -s /tmp/smoke/decomp.c
 
       - name: Push to GHCR
+        if: inputs.publish
         run: |
           set -eux
           ver="${{ steps.ver.outputs.ver }}"
+          test -n "$ver"
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login "$REGISTRY" -u "${{ github.actor }}" --password-stdin
           docker tag ghidra:arm64 "$REGISTRY/$IMAGE_NAME:$ver"

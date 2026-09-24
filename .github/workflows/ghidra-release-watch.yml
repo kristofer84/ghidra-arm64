@@ -1,0 +1,59 @@
+name: ghidra release watch
+
+# The Ghidra pin in build.sh is a default for local builds, so it can rot silently. This
+# notices when upstream moves and opens one issue, which is then commented on rather than
+# duplicated.
+on:
+  schedule:
+    - cron: '0 6 * * 1'      # Mondays, 06:00 UTC
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: kristofer84/ghidra-arm64
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Compare the pin with upstream
+        id: check
+        run: |
+          set -euo pipefail
+          pinned=$(grep -oE 'GHIDRA_VER:-[0-9.]+' build.sh | head -1 | sed 's/.*:-//')
+          latest=$(curl -fsSL https://api.github.com/repos/NationalSecurityAgency/ghidra/releases/latest \
+                   | grep -oE '"tag_name": *"Ghidra_[0-9._]+_build"' | head -1 \
+                   | sed -E 's/.*Ghidra_([0-9._]+)_build.*/\1/')
+          stale=false
+          [ -n "$latest" ] && [ "$pinned" != "$latest" ] && stale=true
+          echo "pinned=$pinned upstream=$latest stale=$stale"
+          {
+            echo "pinned=$pinned"
+            echo "latest=$latest"
+            echo "stale=$stale"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Open or update the issue
+        if: steps.check.outputs.stale == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LATEST: ${{ steps.check.outputs.latest }}
+          PINNED: ${{ steps.check.outputs.pinned }}
+        run: |
+          set -euo pipefail
+          gh label create ghidra-update --force \
+            --description "automated: a newer Ghidra release exists" --color 0E8A16 >/dev/null 2>&1 || true
+          body=$(printf 'Upstream Ghidra **%s** is out; this repo pins **%s**.\n\nTo publish a matching image:\n\n    git tag v%s && git push origin v%s\n\nThe release workflow builds that version and pushes `%s:%s`. Bumping the `GHIDRA_VER`\ndefault in `build.sh` too keeps local builds aligned with CI.\n\nOpened by `.github/workflows/ghidra-release-watch.yml`.\n' \
+            "$LATEST" "$PINNED" "$LATEST" "$LATEST" "$IMAGE_NAME" "$LATEST")
+          issue=$(gh issue list --state open --label ghidra-update --limit 1 --json number -q '.[0].number')
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "$body"
+          else
+            gh issue create --title "Ghidra $LATEST is out (pinned: $PINNED)" \
+              --label ghidra-update --body "$body"
+          fi
