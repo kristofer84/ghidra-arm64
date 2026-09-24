@@ -1,0 +1,8 @@
+# Ghidra ships decompiler natives for linux_x86_64 and win_x86_64 only. On arm64 the
+# Java side runs fine but every decompile fails, because the decompiler is a separate
+# native C++ process. This layer adds one built from the matching source tag.
+# Build with ./build.sh, which produces `decompile` next to this file.
+ARG GHIDRA_VER=12.1.3
+FROM ghidra-headless:${GHIDRA_VER}
+COPY decompile /opt/ghidra/Ghidra/Features/Decompiler/os/linux_arm_64/decompile
+RUN chmod +x /opt/ghidra/Ghidra/Features/Decompiler/os/linux_arm_64/decompile

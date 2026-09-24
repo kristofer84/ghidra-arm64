@@ -1,0 +1,2 @@
+# Built native decompiler (~3.8 MB) - regenerate with ./build.sh
+decompile
