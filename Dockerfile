@@ -1,5 +1,5 @@
 # Headless Ghidra for arm64. Kept in a container so the host needs no JDK.
-FROM eclipse-temurin:21-jdk
+FROM eclipse-temurin:25-jdk
 
 # The release tag is Ghidra_<ver>_build, and the asset filename carries a build date
 # (ghidra_12.1.3_PUBLIC_20260817.zip) that cannot be derived from the version -- so
