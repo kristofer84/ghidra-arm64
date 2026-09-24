@@ -31,7 +31,7 @@ jobs:
     # caller grants fails at startup with no log, which is exactly what happened here.
     # The callers declare what they need.
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Resolve version
         id: ver
